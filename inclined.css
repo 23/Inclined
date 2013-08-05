@@ -1,5 +1,6 @@
 @import url(http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,600,700&subset=latin,cyrillic-ext,greek,greek-ext,cyrillic,latin-ext,vietnamese);
 #inclined, #inclined h1,#inclined h2, #inclined p {font-family:Helvetica,sans-serif; margin:0;}
+body {margin:0;}
 
 /* Inclined page with border, drop shadow and background */
 #inclined .screen {position:fixed; top:0; left:0; height:100%; width:100%;}
