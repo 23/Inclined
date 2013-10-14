@@ -12,26 +12,63 @@
 */
 
 var Inclined = (function($) {
-  return function(parent, width, height, skew, rotate, borderWidth){    
+  return function(defaultPage, parent, width, height, skew, rotate, borderWidth){    
     var $this = this;
-    
-    $this.supported = $.support.opacity; // This is not the best functional test, but it's kinda simple
-    
+
+    // BOOTSTRAP
+    $this.defaultPage = defaultPage||'';
     $this.width = width||1600;
     $this.height = height||1330;
     $this.skew = skew||20;
     $this.rotate = rotate||-10;
     $this.borderWidth = borderWidth||10;
     $this.parent = $(parent||'body');
-    $this.container = $(document.createElement('div')).attr('id', 'inclined');
+    $this.container = $(document.createElement('div')).attr('id', 'inclined').css({display:'none'});
     $this.parent.append($this.container);
     $this.screen = null;
     $this.iframe = null;
-            
+
+
+
+    /* POSSIBLY SHOW LINKS TO THE TOUR */
+    $this.showTourLinks = function(){
+      $('.inclined-link').toggle($this.supported && ($this.defaultPage.length || $('meta[name=inclined_title]').length>0));
+    }
+    
+    // SUPPORTED OR NOT?
+    // Simple functional test for whether 3d transforms are supported
+    var has3d = function(){
+      var el = document.createElement('p'),
+      has3d,
+      transforms = {
+        'webkitTransform':'-webkit-transform',
+        'OTransform':'-o-transform',
+        'msTransform':'-ms-transform',
+        'MozTransform':'-moz-transform',
+        'transform':'transform'
+      };
+      document.body.insertBefore(el, null);
+      for(var t in transforms){
+        if( el.style[t] !== undefined ){
+          el.style[t] = 'translate3d(1px,1px,1px)';
+          has3d = window.getComputedStyle(el).getPropertyValue(transforms[t]);
+        }
+      }
+      document.body.removeChild(el);
+      return (has3d !== undefined && has3d.length > 0 && has3d !== "none");
+    }
+    $this.supported = has3d();
+    $this.showTourLinks();
+    if(!$this.supported) return $this;
+
+
+
+    /* HANDLE SHOW AND HIDE OF THE FULL UI */
     $this.show = function(){
       if(!$this.supported) return;
 
       $this.container.show();
+      $this.update();
       $this.parent.css({overflow:'hidden'});
       return $this;
     }
@@ -42,72 +79,127 @@ var Inclined = (function($) {
       $this.parent.css({overflow:''});
       return $this;
     }
+    $this.visible = function(){
+      return ($this.container.css('display') != 'none');
+    }
+    
+
+    /* BUILD THE UI ON FIRST LOAD */
     $this.build = function(){
       if(!$this.supported||$this.screen) return;
               
       // Create the background for the screen
-      $this.container.append($(document.createElement('div')).attr('class', 'background'));
+      $this.container.append($(document.createElement('div')).attr('class', 'inclined-background'));
       // Create the screen
-      $this.container.append($(document.createElement('div')).html('<div></div>').attr('class', 'screen'));
-      $this.screen = $('.screen div');
+      $this.container.append($(document.createElement('div')).html('<div></div>').attr('class', 'inclined-screen'));
+      $this.screen = $('.inclined-screen div');
               
       // Hide the UI until prompted
       $this.container.hide();
               
       // Create a shadow div
-      $this.screen.append($(document.createElement('div')).html('<span></span>').attr('class', 'shadow'));
+      $this.screen.append($(document.createElement('div')).html('<span></span>').attr('class', 'inclined-shadow'));
       // Create border divs
       for (var i=1; i<=$this.borderWidth; i++) {
-        $this.screen.append($(document.createElement('div')).css({transform:'translate(-'+i+'px,'+i+'px)'}));
+        var transformProperty = 'translate(-'+i+'px,'+i+'px)';
+        $this.screen.append($(document.createElement('div')).css({
+          '-webkit-transform':transformProperty,
+          '-ie-transform':transformProperty,
+          '-moz-transform':transformProperty,
+          '-o-transform':transformProperty,
+          'transform':transformProperty
+        }));
       }
       // Create a iframe
       $this.iframe = $(document.createElement('iframe')).attr('scrolling', 'no');
       $this.iframe.load(function(){
-        $this.setIntroduction()
-        $this.placePins()
+        // Update content of the tour
+        $this._setIntroduction();
+        $this._handleFlow();
+        $this._placePins();
+        $this._attachIframeKeyEvents();
       });
       $this.screen.append($this.iframe);
       // Create a blind
-      $this.screen.append($(document.createElement('div')).attr('class', 'blind'));
+      $this.screen.append($(document.createElement('div')).attr('class', 'inclined-blind'));
       
       // Create text nodes
-      $this.container.append($(document.createElement('div')).attr('class', 'introduction').html('<h1></h1><p></p>'));
+      $this.container.append($(document.createElement('div')).attr('class', 'inclined-introduction').html('<h1></h1><p></p>'));
+
+      // Create previous and next
+      var previousLink = $(document.createElement('a')).attr('class', 'inclined-previous-link').attr('href', '#').hide();
+      $this.container.append(previousLink);
+      previousLink.click(function(){
+        $this.showPreviousUrl();
+        return false;
+      });
+      var nextLink = $(document.createElement('a')).attr('class', 'inclined-next-link').attr('href', '#').hide();
+      $this.container.append(nextLink);
+      nextLink.click(function(){
+        $this.showNextUrl();
+        return false;
+      });
 
       // Create close link
-      var closeLink = $(document.createElement('a')).attr('class', 'close').attr('href', '#').html('End tour');
+      var closeLink = $(document.createElement('a')).attr('class', 'inclined-close').attr('href', '#').html('End tour');
       $this.container.append(closeLink);
       closeLink.click(function(){
         $this.hide();
         return false;
       });
+
+      // Update UI
+      $this.update();
       
       return $this;
     }
+
+
+    /* UPDATE THE UI ON EVERY LOAD */
     $this.update = function(){
-      if(!$this.supported) return;
+      $this.showTourLinks();
+      if(!$this.supported||!$this.screen) return;
 
       // Set the size of the iframe, borders and shadows
-      $('#inclined .screen iframe, #inclined .screen div div').height($this.height).width($this.width);
+      $('#inclined .inclined-screen iframe, #inclined .inclined-screen div div').height($this.height).width($this.width);
       // Skew and rotate the screen
-      $this.screen.css({transform:'skew('+$this.skew+'deg) rotate('+$this.rotate+'deg)'});
+      var transformProperty = 'skew('+$this.skew+'deg) rotate('+$this.rotate+'deg)';
+      $this.screen.css({
+        '-webkit-transform':transformProperty,
+        '-ie-transform':transformProperty,
+        '-moz-transform':transformProperty,
+        '-o-transform':transformProperty,
+        'transform':transformProperty
+      });
       // Set the height of the screen
-      var _w = $('#inclined .screen').width();
-      var _h = $('#inclined .screen').height();
+      var _w = $('#inclined .inclined-screen').width();
+      var _h = $('#inclined .inclined-screen').height();
       var scale = Math.floor(Math.min(_h/$this.height*.7, _w/$this.width*.5)*100)/100.0;
-      $('#inclined .screen').css({transform:'scale('+scale+')', top:(_h*-.1)+'px', left:(_w*-.08)+'px'});
+      var transformProperty = 'scale('+scale+')';
+      $('#inclined .inclined-screen').css({
+        '-webkit-transform':transformProperty,
+        '-ie-transform':transformProperty,
+        '-moz-transform':transformProperty,
+        '-o-transform':transformProperty,
+        'transform':transformProperty,
+        top:(_h*-.1)+'px', 
+        left:(_w*-.08)+'px'
+      });
       // Update pins
-      $this.placePins();
+      $this._placePins();
       
       return $this;
     }
     $(window).resize($this.update);
     $(window).load($this.update);
 
-    $this.clearPins = function(){
-      $this.container.find('.pin').remove();
+
+    /* HELPER METHODS FOR MANAGING UI STATE */
+    $this._clearPins = function(){
+      $this.container.find('.inclined-pin').remove();
     }
-    $this.placePins = function(){
-      $this.clearPins();
+    $this._placePins = function(){
+      $this._clearPins();
       var $$ = $this.iframe[0].contentWindow.jQuery; // reference to the jQuery instance within the loaded iframe; no `$$` is not a good name.
       if($$===undefined) return;
       $$('*[inclined_headline]').each(function(i,el){
@@ -120,36 +212,161 @@ var Inclined = (function($) {
         var pinLeft = dummy.offset().left - 25;
         dummy.remove();
         // Now place the pin in the same spot, but unskewed
-        var pin = $(document.createElement('div')).addClass('pin').html('<div><h2></h2><p></p></div>').css({top:pinTop+'px', left:pinLeft+'px'});
+        var pin = $(document.createElement('div')).addClass('inclined-pin').html('<div><h2></h2><p></p></div>').css({top:pinTop+'px', left:pinLeft+'px'});
         pin.find('h2').html($$(el).attr('inclined_headline'));
         pin.find('p').html($$(el).attr('inclined_body'));
+        pin.mouseover(function(){
+          $this.setActivePin(pin);
+        });
         $this.container.append(pin);
       });
+      
+      // Show the first pin, please
+      $this.setActivePin(1);
     }
-
-    $this.setIntroduction = function(headline, description){
+    $this._handleFlow = function(){
+      $this.nextUrl = '';
+      $this.previousUrl = '';
+      var $$ = $this.iframe[0].contentWindow.jQuery; // reference to the jQuery instance within the loaded iframe; no `$$` is not a good name.
+      if($$!==undefined) {
+        $$('meta[name=inclined_next_url]').each(function(i,el){
+          $this.nextUrl = $$(el).attr('content');
+        });
+        $$('meta[name=inclined_previous_url]').each(function(i,el){
+          $this.previousUrl = $$(el).attr('content');
+        });
+      }
+      $('#inclined .inclined-next-link').toggle($this.nextUrl.length>0);
+      $('#inclined .inclined-previous-link').toggle($this.previousUrl.length>0);
+    }
+    $this._setIntroduction = function(headline, description){
       var $$ = $this.iframe[0].contentWindow.jQuery; // reference to the jQuery instance within the loaded iframe; no `$$` is not a good name.
       if($$===undefined) return;
-      $('#inclined .introduction h1').html('');
+      $('#inclined .inclined-introduction h1').html('');
       $$('meta[name=inclined_title]').each(function(i,el){
-        $('#inclined .introduction h1').html($$(el).attr('content'));
+        $('#inclined .inclined-introduction h1').html($$(el).attr('content'));
       });
-      $('#inclined .introduction p').html('');
+      $('#inclined .inclined-introduction p').html('');
       $$('meta[name=inclined_description]').each(function(i,el){
-        $('#inclined .introduction p').html($$(el).attr('content'));
+        $('#inclined .inclined-introduction p').html($$(el).attr('content'));
       });
       return $this;
     }
-    
+
+
+    /* MANAGE THE PAGE/URL OF THE TOUR */
+    $this.nextUrl = '';
+    $this.previousUrl = '';
+    $this.showNextUrl = function(){
+      if($this.nextUrl.length>0) $this.href($this.nextUrl);
+    }
+    $this.showPreviousUrl = function(){
+      if($this.previousUrl.length>0) $this.href($this.previousUrl);
+    }
     $this.href = function(href){
       if(!$this.supported) return;
+      $this.build();
 
-      $this.iframe.attr('src', href||location.href);
+      $this._clearPins();
+
+      // Clear next/previous
+      $this.previousUrl = $this.nextUrl = '';
+      $('#inclined .inclined-next-link, #inclined .inclined-previous-link').hide();
+
+      if(!href) {
+        if($('meta[name=inclined_title]').length||!$this.defaultPage.length) {
+          href = location.href.split('#')[0];
+        } else {
+          href = $this.defaultPage;
+        }
+      }
+      $this.iframe.attr('src', href + (/\?/.test(href) ? '&' : '?') + 'inclinedframe='+Math.random());
       return $this;
     }
+
+
+    /* MANAGE PINS WITHIN THE TOUR */
+    $this.activePin = null;
+    $this.setActivePin = function(el){
+      $('#inclined .inclined-pin.inclined-active').removeClass('inclined-active');
+      var all = $('#inclined .inclined-pin');
+      var count = all.length;
+      if(count==0) {
+        $this.activePin = null;
+        return;
+      }
+      // By number
+      if(!isNaN(el)) {
+        if(el>count) {
+          if(this.nextUrl.length>0) {
+            $this.showNextUrl();
+            return;
+          } else {
+            el = 1;
+          }
+        }
+        if(el<=0) {
+          if(this.previousUrl.length>0) {
+            $this.showPreviousUrl();
+            return;
+          } else {
+            el = 1;
+          }
+        }
+        el = all[el-1];
+      }
+      // By element
+      $(el).addClass('inclined-active');
+      // Update index
+      $this.activePin = ($.inArray(el, $('#inclined .inclined-pin')))+1;
+    }
+    $this.nextActivePin = function(){
+      if($this.activePin) {
+        $this.setActivePin($this.activePin+1);
+      } else {
+        $this.setActivePin(1);
+      }
+    }
+    $this.previousActivePin = function(){
+      if($this.activePin) {
+        $this.setActivePin($this.activePin-1);
+      } else {
+        $this.setActivePin(1);
+      }
+    }
+
+    // Manage keyboard events to navigate tour.
+    $this._keyHandler = function(e){
+      if(!$this.supported || !$this.visible()) return;
+      if(!e.ctrlKey && !e.altKey && !e.metaKey) {
+        if(e.charCode==32 || e.keyCode==13 || e.keyCode==32||e.keyCode==39) {
+          $this.nextActivePin();          
+        }
+      }
+      if(e.keyCode==37) {
+        $this.previousActivePin();
+      }
+    }
+    $this._attachIframeKeyEvents = function(){
+      // This is incredible ugly, but after loading the page iframe
+      // keyboard focus is stolen away from the parent frame; and the 
+      // only solution is to listen to keyboard events from the iframe
+      // itself.
+      try {
+        var cw = $this.iframe[0].contentWindow;
+        if(cw.jQuery) {
+          cw.jQuery(cw).keypress($this._keyHandler);
+          cw.jQuery(cw).keydown($this._keyHandler);
+        }
+      }catch(e){}
+    }
+    $(document).keypress($this._keyHandler);
+    $(document).keydown($this._keyHandler);
             
-    $this.build();
-    $this.update();
+
+
+
+    if(window.location.hash=='#inclined') $this.href().show();
     return $this;
   }
 }(jQuery)); 

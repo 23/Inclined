@@ -1,31 +1,158 @@
-@import url(http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,600,700&subset=latin,cyrillic-ext,greek,greek-ext,cyrillic,latin-ext,vietnamese);
-#inclined, #inclined h1,#inclined h2, #inclined p {font-family:Helvetica,sans-serif; margin:0;}
-body {margin:0;}
+/* Basic Inclined element */
+#inclined {
+    position:absolute; 
+    top:0; 
+    left:0; 
+    width:100%; 
+    height:100%; 
+    background-color:white; 
+    z-index:9998;
+}
+
+/* Introduction, headlines and base styling */
+#inclined, #inclined h1, #inclined h2, #inclined p {
+    font-family:Helvetica,sans-serif; 
+    margin:0;
+}
+#inclined .inclined-background {
+    position:fixed; 
+    top:65%; 
+    left:0; 
+    width:100%; 
+    height:35%; 
+    background-color:#f8f8f8;
+}
+#inclined .inclined-introduction {
+    position:absolute; 
+    top:40px; 
+    left:40px; 
+    width:40%; 
+    max-width:460px;
+}
+#inclined .inclined-introduction h1 {
+    font-size:22px; 
+    font-weight:bold; 
+    line-height:1em; 
+    margin-bottom:10px; 
+    padding:0; 
+    color:#3e3e3e;
+}
+#inclined .inclined-introduction p {
+    font-size:14px; 
+    line-height:1.6em; 
+    color:#2b2b2b;
+}
 
 /* Inclined page with border, drop shadow and background */
-#inclined .screen {position:fixed; top:0; left:0; height:100%; width:100%;}
-#inclined .screen iframe, #inclined .screen div div {position:absolute; background: #999; opacity:.57;}
-#inclined .screen iframe {border:0; opacity:1; background-color:transparent;}
-#inclined .screen div.shadow {oapcity:1;}
-#inclined .screen div.shadow span {display:block; position:absolute; top:35%; left:15%; width:50%; height:50%; background-color:black; box-shadow: 0 0 260px 260px black;}
-#inclined .screen div.blind {background-color:transparent}
-#inclined .background {position:fixed; top:65%; left:0; width:100%; height:35%; background-color:#f8f8f8;}
-#inclined .introduction {position:absolute; top:40px; left:40px; width:40%; max-width:460px;}
+#inclined .inclined-screen {
+    position:fixed; 
+    top:0; 
+    left:0; 
+    height:100%; 
+    width:100%;
+}
+#inclined .inclined-screen iframe, #inclined .inclined-screen div div {
+    position:absolute; 
+    background: #999; 
+    opacity:.57;
+}
+#inclined .inclined-screen iframe {
+    border:0; 
+    opacity:1; 
+    background-color:transparent;
+}
+#inclined .inclined-screen div.inclined-shadow {
+    opacity:1;
+}
+#inclined .inclined-screen div.inclined-shadow span {
+    display:block; 
+    position:absolute; 
+    top:35%; 
+    left:15%; 
+    width:50%; 
+    height:50%; 
+    background-color:black; 
+    box-shadow: 0 0 260px 260px black;
+}
+#inclined .inclined-screen div.inclined-blind {
+    background-color:transparent
+}
 
-/* Introduction text */
-#inclined .introduction h1 {font-size:22px; font-weight:bold; line-height:1em; margin-bottom:10px; padding:0; color:#3e3e3e;}
-#inclined .introduction p {font-size:14px; line-height:1.6em; color:#2b2b2b;}
 
 /* Pins and info boxes */
-#inclined .pin {cursor:pointer; position:absolute; background:url('pin-inactive-background.png') left top no-repeat; min-width:50px; min-height:50px;}
-#inclined .pin div {display:none; background-color:white; margin-left:120px; padding:15px 15px; border:1px solid #ccc; border-radius:2px; width:200px;}
-#inclined .pin.active, #inclined .pin:hover {background-image:url('pin-active-background.png'); z-index:99;}
-#inclined .pin.active div, #inclined .pin:hover div {display:block;}
-#inclined .pin h2 {font-size:16px; font-weight:bold; line-height:1em; margin-bottom:5px; padding:0; color:#3e3e3e;}
-#inclined .pin p {font-size:13px; line-height:1.5em; color:#2b2b2b;}
+#inclined .inclined-pin {
+    cursor:pointer; 
+    position:absolute; 
+    background:url('/resources/um/script/inclined/pin-inactive-background.png') left top no-repeat; 
+    min-width:50px; 
+    min-height:50px;
+}
+#inclined .inclined-pin div {
+    display:none; 
+    background-color:white; 
+    margin-left:120px; 
+    padding:18px; 
+    border:1px solid #ccc; 
+    border-radius:3px; 
+    width:330px;
+}
+#inclined .inclined-pin.inclined-active {
+    background-image:url('/resources/um/script/inclined/pin-active-background.png'); 
+    z-index:9999;
+}
+#inclined .inclined-pin.inclined-active div {
+    display:block;
+}
+#inclined .inclined-pin h2 {
+    font-size:16px; 
+    font-weight:bold; 
+    line-height:1em; 
+    margin-bottom:10px; 
+    padding:0; 
+    color:#2b2b2b;
+}
+#inclined .inclined-pin p {
+    font-size:14px; 
+    line-height:1.6em; 
+    color:#2b2b2b;
+}
 
-/* Close link */
-#inclined a.close {display:block; position:absolute; top:45px; right:40px; color:#666; text-decoration:underline; font-size:12px; padding-right:26px; background:url('end-icon.png') right center no-repeat; line-height:19px;}
+/* Next, Previous & Close */
+#inclined a.inclined-previous-link, #inclined a.inclined-next-link {
+    position:absolute;
+    top:45%;
+    display:block;
+    width:60px;
+    height:60px;
+    background-position:top left;
+    background-repeat:no-repeat;
+    background-size:60px 60px;
+}
+#inclined a.inclined-previous-link {
+    left:40px;
+    background-image:url('/resources/um/script/inclined/previous-icon.png') ;
+}
+#inclined a.inclined-next-link {
+    right:40px;
+    background-image:url('/resources/um/script/inclined/next-icon.png') ;
+}
+
+#inclined a.inclined-previous-link:hover, #inclined a.inclined-next-link:hover {
+    opacity:.9;
+}
+#inclined a.inclined-close {
+    display:block; 
+    position:absolute; 
+    top:45px; 
+    right:40px; 
+    color:#666; 
+    text-decoration:underline; 
+    font-size:12px; 
+    padding-right:26px; 
+    background:url('/resources/um/script/inclined/end-icon.png') right center no-repeat; 
+    background-size:19px 19px;
+    line-height:19px;
+}
 
 /* Simple show and hide animation */
 /*
