@@ -2,7 +2,7 @@
 
 Inclined is a tour, help or guide mode for the browsers. It takes any web page and makes it easy to create a guided tour of elements and features within it.
 
-The library supports modern browsers from IE9 and upwards.
+The library supports modern browsers from IE10 and upwards.
 
 To create a tour from a page, add descriptions to `<head>`:
 
