@@ -51,6 +51,10 @@
     height:100%; 
     width:100%;
 }
+#inclined .inclined-screen div div.inclined-iframe-background {
+    background-color:#eee;
+    opacity:1;
+}
 #inclined .inclined-screen iframe, #inclined .inclined-screen div div {
     position:absolute; 
     background: #999; 
@@ -60,6 +64,13 @@
     border:0; 
     opacity:1; 
     background-color:transparent;
+
+    -webkit-transition:opacity 1s linear;
+       -moz-transition:opacity 1s linear;
+        -ie-transition:opacity 1s linear;
+         -o-transition:opacity 1s linear;
+            transition:opacity 1s linear;
+
 }
 #inclined .inclined-screen div.inclined-shadow {
     opacity:1;

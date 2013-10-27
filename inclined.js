@@ -23,8 +23,6 @@ var Inclined = (function($) {
     $this.rotate = rotate||-10;
     $this.borderWidth = borderWidth||10;
     $this.parent = $(parent||'body');
-    $this.container = $(document.createElement('div')).attr('id', 'inclined').css({display:'none'});
-    $this.parent.append($this.container);
     $this.screen = null;
     $this.iframe = null;
 
@@ -38,29 +36,37 @@ var Inclined = (function($) {
     // SUPPORTED OR NOT?
     // Simple functional test for whether 3d transforms are supported
     var has3d = function(){
-      var el = document.createElement('p'),
-      has3d,
-      transforms = {
-        'webkitTransform':'-webkit-transform',
-        'OTransform':'-o-transform',
-        'msTransform':'-ms-transform',
-        'MozTransform':'-moz-transform',
-        'transform':'transform'
-      };
-      document.body.insertBefore(el, null);
-      for(var t in transforms){
-        if( el.style[t] !== undefined ){
-          el.style[t] = 'translate3d(1px,1px,1px)';
-          has3d = window.getComputedStyle(el).getPropertyValue(transforms[t]);
+      try {
+        var el = document.createElement('p'),
+        has3d,
+        transforms = {
+          'webkitTransform':'-webkit-transform',
+          'OTransform':'-o-transform',
+          'msTransform':'-ms-transform',
+          'MozTransform':'-moz-transform',
+          'transform':'transform'
+        };
+        document.body.insertBefore(el, null);
+        for(var t in transforms){
+          if( el.style[t] !== undefined ){
+            el.style[t] = 'translate3d(1px,1px,1px)';
+            has3d = window.getComputedStyle(el).getPropertyValue(transforms[t]);
+          }
         }
+        document.body.removeChild(el);
+        return (has3d !== undefined && has3d.length > 0 && has3d !== "none");
+      }catch(e){
+        return false;
       }
-      document.body.removeChild(el);
-      return (has3d !== undefined && has3d.length > 0 && has3d !== "none");
     }
-    $this.supported = has3d();
+    $this.supported = has3d() && $(window).width()>800;
     $this.showTourLinks();
     if(!$this.supported) return $this;
 
+
+    // Create basic containers for the Inclined object
+    $this.container = $(document.createElement('div')).attr('id', 'inclined').css({display:'none'});
+    $this.parent.append($this.container);
 
 
     /* HANDLE SHOW AND HIDE OF THE FULL UI */
@@ -111,15 +117,18 @@ var Inclined = (function($) {
         }));
       }
       // Create a iframe
-      $this.iframe = $(document.createElement('iframe')).attr('scrolling', 'no');
+      $this.iframeBackground = $(document.createElement('div')).addClass('inclined-iframe-background');
+      $this.iframe = $(document.createElement('iframe')).attr('scrolling', 'no').css({visibility:'hidden', opacity:0});
       $this.iframe.load(function(){
         // Update content of the tour
         $this._setIntroduction();
         $this._handleFlow();
         $this._placePins();
         $this._attachIframeKeyEvents();
+        $this.iframe.css({visibility:'visible', opacity:1});
       });
-      $this.screen.append($this.iframe);
+      $this.iframeBackground.append($this.iframe)
+      $this.screen.append($this.iframeBackground);
       // Create a blind
       $this.screen.append($(document.createElement('div')).attr('class', 'inclined-blind'));
       
@@ -213,6 +222,7 @@ var Inclined = (function($) {
         dummy.remove();
         // Now place the pin in the same spot, but unskewed
         var pin = $(document.createElement('div')).addClass('inclined-pin').html('<div><h2></h2><p></p></div>').css({top:pinTop+'px', left:pinLeft+'px'});
+        pin.attr('inclined_priority', $(el).attr('inclined_priority')||1);
         pin.find('h2').html($$(el).attr('inclined_headline'));
         pin.find('p').html($$(el).attr('inclined_body'));
         pin.mouseover(function(){
@@ -280,16 +290,25 @@ var Inclined = (function($) {
           href = $this.defaultPage;
         }
       }
-      $this.iframe.attr('src', href + (/\?/.test(href) ? '&' : '?') + 'inclinedframe='+Math.random());
+      $this.iframe.css({visibility:'hidden', opacity:0}).attr('src', href + (/\?/.test(href) ? '&' : '?') + 'inclinedframe='+Math.random());
       return $this;
     }
 
 
     /* MANAGE PINS WITHIN THE TOUR */
+    $this.prioritizedPins = function(){
+      var priorities = [];
+      $.each($('#inclined .inclined-pin'), function(i,el){
+        var priority = $(el).attr('inclined_priority')||1;
+        if(!priorities[priority]) priorities[priority] = [];
+        priorities[priority].push(el);
+      });
+      return $.map(priorities, function(n){return n;});
+    }
     $this.activePin = null;
     $this.setActivePin = function(el){
       $('#inclined .inclined-pin.inclined-active').removeClass('inclined-active');
-      var all = $('#inclined .inclined-pin');
+      var all = $this.prioritizedPins();
       var count = all.length;
       if(count==0) {
         $this.activePin = null;
@@ -318,7 +337,7 @@ var Inclined = (function($) {
       // By element
       $(el).addClass('inclined-active');
       // Update index
-      $this.activePin = ($.inArray(el, $('#inclined .inclined-pin')))+1;
+      $this.activePin = ($.inArray(el, all))+1;
     }
     $this.nextActivePin = function(){
       if($this.activePin) {
